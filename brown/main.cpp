@@ -1,79 +1,87 @@
 #include <SFML/Graphics.hpp>
 #include <random>
-#include <algorithm>
 #include <chrono>
 #include <array>
-#include <memory>
 
-enum Const {
-	w = 30,
-	h = 20,
-	n = 300000,
-	l = 16
+class Const {
+public:
+	const static int w = 30;
+	const static int n = 300000;
+};
+
+class Ranodmizer {
+public:
+	Ranodmizer(int m) : gen(rd()), dis(std::uniform_int_distribution<>(0, m)) {}
+	int roll() {
+		return dis(gen);
+	}
+private:
+	std::random_device rd;
+	std::mt19937 gen;
+	std::uniform_int_distribution<int> dis;
 };
 
 class Model {
 public:
-	std::array<std::array <int, Const::w + 2>, Const::h + 2> current;
-
 	Model() {
-		//std::fill(current.begin(), current.end(), 0);
-		for (int i = 0; i < Const::h + 2; ++i) {
-			for (int j = 0; j < Const::w + 2; ++j) {
-				current[i][j] = 0;
+		Ranodmizer r(Const::w - 1);
+		r8 = new Ranodmizer(8);
+		for (int i = 0; i < Const::w; ++i) {
+			for (int j = 0; j < Const::w; ++j) {
+				cells[i][j] = 0;
 			}
 		}
-		std::uniform_int_distribution<std::mt19937::result_type> d30(1, 30);
-		std::uniform_int_distribution<std::mt19937::result_type> d20(1, 20);
-		std::mt19937 gen(rd());
-		for (int i = 0; i < n; ++i) {
-			current[d20(gen)][d30(gen)]++;
+		for (int i = 0; i < Const::n; ++i) {
+			cells[r.roll()][r.roll()]++;
 		}
 	}
 
 	void update() {
-		std::uniform_int_distribution<std::mt19937::result_type> d(0, 8);
-		std::mt19937 gen(rd());
-		//std::fill(updated.begin(), updated.end(), 0);
-		for (int i = 0; i < Const::h + 2; ++i) {
-			for (int j = 0; j < Const::w + 2; ++j) {
-				updated[i][j] = 0;
-			}
-		}
-		int a;
-		for (int i = 1; i < Const::h + 1; ++i) {
-			for (int j = 1; j < Const::w + 1; ++j) {
-				for (int k = 0; k < current[i][j]; ++k) {
-					a = d(gen);
-					updated[i - 1 + a / 3][j - 1 + a % 3]++;
+		int a, i_new, j_new;
+		for (int i = 0; i < Const::w ; ++i) {
+			for (int j = 0; j < Const::w; ++j) {
+				int num = cells[i][j];
+				for (int k = 0; k < num; ++k) {
+					a = r8->roll();
+					i_new = i - 1 + a / 3;
+					j_new = j - 1 + a % 3;
+					if (i_new < 0) i_new++;
+					if (j_new < 0) j_new++;
+					if (i_new > 29) i_new--;
+					if (j_new > 29) j_new--;
+					cells[i_new][j_new]++;
+					cells[i][j]--;
 				}
 			}
 		}
-		current = updated;
+	}
+
+	std::array<std::array <int, Const::w>, Const::w>& getCells() {
+		return cells;
 	}
 private:
-	std::random_device rd;
-	std::array<std::array <int, Const::w + 2>, Const::h + 2> updated;
+	std::array<std::array <int, Const::w>, Const::w> cells;
+	Ranodmizer* r8;
 };
 
 class View {
 public:
 	View() {
-		int step = (int)(255 / 22);
+		int step = static_cast <int> (255 / 22);
 		for (int i = 0; i < 21; ++i) {
 			colors.push_back(sf::Color(0, 0, step * i));
 		}
 	}
-	void draw(sf::RenderWindow& app, std::array<std::array <int, Const::w + 2>, Const::h + 2>& a) {
+	void draw(sf::RenderWindow& app, const std::array<std::array <int, Const::w>, Const::w>& cells) {
 		int c;
-		for (int i = 1; i < Const::h + 1; ++i) {
-			for (int j = 1; j < Const::w + 1; ++j) {
+		for (int i = 0; i < Const::w; ++i) {
+			for (int j = 0; j < Const::w; ++j) {
 				sf::RectangleShape r;
 				r.setSize(sf::Vector2f(16, 16));
-				r.setPosition((float)(i * 16), (float)(j * 16));
-				c = (int)(a[i][j] / 50);
-				if (c > 21)
-					c = 21;
+				r.setPosition(static_cast <float> (i * 16), static_cast <float> (j * 16));
+				c = static_cast <int> (cells[i][j] / 50);
+				if (c > 20) c = 20;
+				if (c < 0) c = 0;
 				r.setFillColor(colors[c]);
 				app.draw(r);
 			}
@@ -84,7 +92,7 @@ private:
 };
 
 int main() {
-	sf::RenderWindow app(sf::VideoMode(Const::h * 16, Const::w * 16), "Brown");
+	sf::RenderWindow app(sf::VideoMode(Const::w * 16, Const::w * 16), "Brown");
 	
 	std::chrono::steady_clock::time_point time_point = std::chrono::steady_clock::now();
 
@@ -92,8 +100,8 @@ int main() {
 
 	std::chrono::microseconds timer(0);
 	
-	std::unique_ptr<Model> m(new Model());
-	std::unique_ptr<View> v(new View());
+	auto m = new Model();
+	auto v = new View();
 	while (app.isOpen())
 	{
 		timer += std::chrono::duration_cast <std::chrono::microseconds> (
@@ -114,7 +122,7 @@ int main() {
 		{
 			timer = std::chrono::microseconds(0);
 			m->update();
-			v->draw(app, m->current);
+			v->draw(app, m->getCells());
 			app.display();
 		}
 	}
