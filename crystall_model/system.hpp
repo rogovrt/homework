@@ -3,6 +3,7 @@
 #include <cmath>
 #include <memory>
 #include <array>
+#include <iostream>
 
 #include <SFML/Graphics.hpp>
 

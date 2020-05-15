@@ -12,47 +12,65 @@ void System::initialize()
 		m_links.push_back(Link(particle(i), particle((i + 1) % size), 1.0f));
 	}
 	*/
-	for (int i = 0; i < 10; ++i) {
+	int k = 0;
+	for (int i = 0; i < 9; ++i) {
 		for (int j = 0; j < 9; ++j) {
 			m_links.push_back(Link(particle(i, j), particle(i, j + 1), 1.0f));
-			m_links.push_back(Link(particle(j, i), particle(j, i + 1), 1.0f));
+			m_links.push_back(Link(particle(j, i), particle(j + 1, i), 1.0f));
+			k += 2;
 		}
 	}
-	for (int i = 1; i < 9; ++i) {
-		int i1 = i;
-		int j = 0;
-		while (i1 <  10) {
-			m_links.push_back(Link(particle(i1, j), particle(i1 + 1, j + 1), 1.0f));
-			m_links.push_back(Link(particle(j, i1), particle(j + 1, i1 + 1), 1.0f));
-			++j;
-			++i1;
+
+	for (int j = 0; j < 9; ++j) {
+		m_links.push_back(Link(particle(9, j), particle(9, j + 1), 1.0f));
+		m_links.push_back(Link(particle(j, 9), particle(j + 1, 9), 1.0f));
+		k += 2;
+	}
+	//std::cout << k << std::endl;
+	k = 0;
+
+	for (int j = 1; j < 9; ++j) {
+		int i = 0;
+		int j1 = j;
+		while (j1 <  9) {
+			m_links.push_back(Link(particle(i, j1), particle(i + 1, j1 + 1), 1.0f));
+			m_links.push_back(Link(particle(j1, i), particle(j1 + 1, i + 1), 1.0f));
+			++j1;
+			++i;
+			k += 2;
 		}
 	}
+
 	for (int i = 0; i < 9; ++i)
 		m_links.push_back(Link(particle(i, i), particle(i + 1, i + 1), 1.0f));
-	for (int i = 1; i < 9; ++i) {
-		int i1 = i;
-		int j = 0;
-		while (i1 > -1) {
-			m_links.push_back(Link(particle(i1, j), particle(i1 - 1, j + 1), 1.0f));
-			--i1;
-			++j;
-		}
-		int i2 = i;
-		j = 9;
-		while (i2 < 10) {
-			m_links.push_back(Link(particle(j, i2), particle(j - 1, i2 + 1), 1.0f));
-			++i2;
-			--j;
+	k += 9;
+	//std::cout << k << std::endl;
+	k = 0;
+
+	for (int j = 1; j < 9; ++j) {
+		int i = 0;
+		int j1 = j;
+		while (j1 > 0) {
+			m_links.push_back(Link(particle(i, j1), particle(i + 1, j1 - 1), 1.0f));
+			m_links.push_back(Link(particle(j1, i), particle(j1 - 1, i + 1), 1.0f));
+			--j1;
+			++i;
+			k += 2;
 		}
 	}
+
+	for (int i = 0; i < 9; ++i)
+		m_links.push_back(Link(particle(i, 9 - i), particle(i + 1, 9 - i), .0f));
+	k += 9;
+	//std::cout << k << std::endl;
+
 }
 
 // =============================================================================
 
 void System::push(const sf::Vector2f force) const noexcept
 {
-	for (auto i = 0U; i < m_particles.size(); ++i) {
+	for (auto i = 0; i < 10; ++i) {
 		for (int j = 0; j < 10; ++j)
 			m_particles[i][j]->move(force);
 	}
@@ -62,7 +80,7 @@ void System::push(const sf::Vector2f force) const noexcept
 
 void System::update() const noexcept
 {
-	for (auto i = 0U; i < m_particles.size(); ++i) {
+	for (auto i = 0; i < 10; ++i) {
 		for (int j = 0; j < 10; ++j)
 		{
 			m_particles[i][j]->move(0.25f); //gravitetion

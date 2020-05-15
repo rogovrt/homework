@@ -41,15 +41,15 @@ int main(int argc, char ** argv)
 	const auto r = 2.5f;
 	sf::Vector2f v(-45.0f, -45.0f);
 	sf::Vector2f top_left = center + v;
-	sf::Vector2f step_right(10.0f, 0.0f);
-	sf::Vector2f step_down(0.0f, 10.0f);
+	sf::Vector2f step_right(30.0f, 0.0f);
+	sf::Vector2f step_down(0.0f, 30.0f);
 	std::array < std::array<particle_t, 10>, 10 > particles;
 	//set size of particles on 10*10
 	for (int i = 0; i < 10; ++i) {
 		sf::Vector2f current = top_left;
 		for (int j = 0; j < 10; ++j) {
 			current += step_right;
-			particles[i][j] = std::make_shared <Particle> (current, current, sf::Vector2f(0.0f, 10.0f), r);
+			particles[i][j] = std::make_shared <Particle> (current, current, sf::Vector2f(0.0f, 0.0f), r);
 		}
 		top_left += step_down;
 	}
@@ -72,22 +72,22 @@ int main(int argc, char ** argv)
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 		{
-			system.push(sf::Vector2f(0.0f, -2.0f));
+			system.push(sf::Vector2f(0.0f, -1.0f));
 		}
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 		{
-			system.push(sf::Vector2f(0.0f, 2.0f));
+			system.push(sf::Vector2f(0.0f, 1.0f));
 		}
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 		{
-			system.push(sf::Vector2f(-2.0f, 0.0f));
+			system.push(sf::Vector2f(-1.0f, 0.0f));
 		}
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 		{
-			system.push(sf::Vector2f(2.0f, 0.0f));
+			system.push(sf::Vector2f(1.0f, 0.0f));
 		}
 
 		window.clear();
