@@ -3,16 +3,16 @@
 #include <chrono>
 #include <array>
 
-class Const {
-public:
-	const static int w = 30;
-	const static int n = 300000;
-};
+namespace C {
+	const int num_cells = 30;
+	const int num_points = 300000;
+	const float cell_size = 16.0f;
+}
 
 class Ranodmizer {
 public:
-	Ranodmizer(int m) : gen(rd()), dis(std::uniform_int_distribution<>(0, m)) {}
-	int roll() {
+	Ranodmizer(int m) : gen(rd()), dis(0, m) {} // тут для распределения к-р копирования, можно просто (0, m)
+	int roll() { // const x2
 		return dis(gen);
 	}
 private:
@@ -24,25 +24,25 @@ private:
 class Model {
 public:
 	Model() {
-		Ranodmizer r(Const::w - 1);
-		r8 = new Ranodmizer(8);
-		for (int i = 0; i < Const::w; ++i) {
-			for (int j = 0; j < Const::w; ++j) {
+		Ranodmizer r(C::num_cells - 1);
+		for (int i = 0; i < C::num_cells; ++i) {
+			for (int j = 0; j < C::num_cells; ++j) {
 				cells[i][j] = 0;
 			}
 		}
-		for (int i = 0; i < Const::n; ++i) {
+		for (int i = 0; i < C::num_points; ++i) {
 			cells[r.roll()][r.roll()]++;
 		}
 	}
 
 	void update() {
 		int a, i_new, j_new;
-		for (int i = 0; i < Const::w ; ++i) {
-			for (int j = 0; j < Const::w; ++j) {
+		Ranodmizer r8(8);
+		for (int i = 0; i < C::num_cells; ++i) {
+			for (int j = 0; j < C::num_cells; ++j) {
 				int num = cells[i][j];
 				for (int k = 0; k < num; ++k) {
-					a = r8->roll();
+					a = r8.roll();
 					i_new = i - 1 + a / 3;
 					j_new = j - 1 + a % 3;
 					if (i_new < 0) i_new++;
@@ -56,29 +56,28 @@ public:
 		}
 	}
 
-	std::array<std::array <int, Const::w>, Const::w>& getCells() {
+	auto& getCells() {
 		return cells;
 	}
 private:
-	std::array<std::array <int, Const::w>, Const::w> cells;
-	Ranodmizer* r8;
+	std::array<std::array <int, C::num_cells>, C::num_cells> cells;
 };
 
 class View {
 public:
 	View() {
-		int step = static_cast <int> (255 / 22);
+		int step = 255 / 22;
 		for (int i = 0; i < 21; ++i) {
 			colors.push_back(sf::Color(0, 0, step * i));
 		}
 	}
-	void draw(sf::RenderWindow& app, const std::array<std::array <int, Const::w>, Const::w>& cells) {
+	void draw(sf::RenderWindow& app, std::array<std::array <int, C::num_cells>, C::num_cells>& cells) {
 		int c;
-		for (int i = 0; i < Const::w; ++i) {
-			for (int j = 0; j < Const::w; ++j) {
+		for (int i = 0; i < C::num_cells; ++i) {
+			for (int j = 0; j < C::num_cells; ++j) {
 				sf::RectangleShape r;
-				r.setSize(sf::Vector2f(16, 16));
-				r.setPosition(static_cast <float> (i * 16), static_cast <float> (j * 16));
+				r.setSize(sf::Vector2f(C::cell_size, C::cell_size));
+				r.setPosition(static_cast <float> (i * C::cell_size), static_cast <float> (j * C::cell_size));
 				c = static_cast <int> (cells[i][j] / 50);
 				if (c > 20) c = 20;
 				if (c < 0) c = 0;
@@ -91,40 +90,50 @@ private:
 	std::vector <sf::Color> colors;
 };
 
-int main() {
-	sf::RenderWindow app(sf::VideoMode(Const::w * 16, Const::w * 16), "Brown");
-	
-	std::chrono::steady_clock::time_point time_point = std::chrono::steady_clock::now();
+class Visualizer {
+public:
+	Visualizer() {}
+	void run() {
+		sf::RenderWindow app(sf::VideoMode(C::num_cells * C::cell_size, C::num_cells * C::cell_size), "Brown");
 
-	const std::chrono::microseconds delay(50000);
+		std::chrono::steady_clock::time_point time_point = std::chrono::steady_clock::now();
 
-	std::chrono::microseconds timer(0);
-	
-	auto m = new Model();
-	auto v = new View();
-	while (app.isOpen())
-	{
-		timer += std::chrono::duration_cast <std::chrono::microseconds> (
-			std::chrono::steady_clock::now() - time_point);
+		const std::chrono::microseconds delay(50000);
 
-		time_point = std::chrono::steady_clock::now();
+		std::chrono::microseconds timer(0);
 
-		sf::Event event;
-
-		while (app.pollEvent(event))
+		Model m;
+		View v;
+		while (app.isOpen())
 		{
-			if (event.type == sf::Event::Closed)
+			timer += std::chrono::duration_cast <std::chrono::microseconds> (
+				std::chrono::steady_clock::now() - time_point);
+
+			time_point = std::chrono::steady_clock::now();
+
+			sf::Event event;
+
+			while (app.pollEvent(event))
 			{
-				app.close();
+				if (event.type == sf::Event::Closed)
+				{
+					app.close();
+				}
+			}
+			if (timer > delay)
+			{
+				timer = std::chrono::microseconds(0);
+				m.update();
+				v.draw(app, m.getCells());
+				app.display();
 			}
 		}
-		if (timer > delay)
-		{
-			timer = std::chrono::microseconds(0);
-			m->update();
-			v->draw(app, m->getCells());
-			app.display();
-		}
 	}
+};
+
+int main() {
+	Visualizer v;
+	v.run();
 	return 0;
 }
+
